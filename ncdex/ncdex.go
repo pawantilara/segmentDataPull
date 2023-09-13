@@ -99,6 +99,7 @@ func UnzipAndSaveAsOutputCSV(zipFileName string) error {
             if err != nil {
                 return err
             }
+			break;
 
             // You can choose to break here if you want to extract the first CSV file found
             // break
