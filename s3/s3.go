@@ -5,13 +5,13 @@ import (
 	"log"
 	"path/filepath"
 	"os"
-	"io"
+    "encoding/json"
+	"encoding/csv"
+    "net/http"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	// "github.com/gorilla/mux"
-	"net/http"
 )
 
 func createAWSSession() (*session.Session, error) {
@@ -115,20 +115,69 @@ func DownloadFileHandler(w http.ResponseWriter, r *http.Request, bucketName, key
         http.Error(w, "Internal Server Error", http.StatusInternalServerError)
         return err
     }
+	defer result.Body.Close()
 
-    // Set the response headers based on the S3 object's metadata
-    w.Header().Set("Content-Length", fmt.Sprintf("%d", *result.ContentLength))
-    w.Header().Set("Content-Type", *result.ContentType)
+    // // Set the response headers based on the S3 object's metadata
+    // w.Header().Set("Content-Length", fmt.Sprintf("%d", *result.ContentLength))
+    // w.Header().Set("Content-Type", *result.ContentType)
 
-    // Copy the S3 object's data to the response body
-    _, err = io.Copy(w, result.Body)
+    // // Copy the S3 object's data to the response body
+    // _, err = io.Copy(w, result.Body)
+    // if err != nil {
+    //     log.Printf("Failed to copy S3 object data to response body: %v", err)
+    //     http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+    //     return err
+    // }
+
+    // // Close the response body
+    // result.Body.Close()
+	// return nil
+	 // Convert CSV records to JSON
+	csvReader := csv.NewReader(result.Body)
+    records, err := csvReader.ReadAll()
     if err != nil {
-        log.Printf("Failed to copy S3 object data to response body: %v", err)
-        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+        http.Error(w, err.Error(), http.StatusInternalServerError)
         return err
     }
 
-    // Close the response body
-    result.Body.Close()
-	return nil
+	 jsonData, err := csvRecordsToJSON(records)
+	 if err != nil {
+		 http.Error(w, err.Error(), http.StatusInternalServerError)
+		 return err
+	 }
+ 
+	 // Set the response content type to JSON
+	 w.Header().Set("Content-Type", "application/json")
+ 
+	 // Write JSON data as the API response
+	 _, err = w.Write(jsonData)
+	 if err != nil {
+		 http.Error(w, err.Error(), http.StatusInternalServerError)
+		 return err
+	 }
+	 return nil
+}
+func csvRecordsToJSON(records [][]string) ([]byte, error) {
+	// Create a slice to hold JSON objects
+	var jsonData []map[string]string
+
+	// Extract headers from the first row
+	headers := records[0]
+
+	// Iterate through the remaining rows and convert each to a JSON object
+	for _, row := range records[1:] {
+		jsonObj := make(map[string]string)
+		for i, header := range headers {
+			jsonObj[header] = row[i]
+		}
+		jsonData = append(jsonData, jsonObj)
+	}
+
+	// Marshal the JSON data
+	jsonDataBytes, err := json.Marshal(jsonData)
+	if err != nil {
+		return nil, err
+	}
+
+	return jsonDataBytes, nil
 }
