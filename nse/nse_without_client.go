@@ -8,11 +8,10 @@ import (
     "os"
     "strconv"
 	"time"
-	"archive/zip"
     "strings"
 )
 
-func NseFo(date string) error{
+func NseFo_without_client(date string) error{
 	currentDate := time.Now()
 	givenDate, err := time.Parse("02-01-2006", date)
     if err != nil {
@@ -39,7 +38,7 @@ func NseFo(date string) error{
     
     outputFileName := "nse.csv.zip"
 
-    err = downloadFile(url, outputFileName, date)
+    err = downloadFile_without_client(url, outputFileName, date)
     if err != nil {
         fmt.Println("Error downloading file:", err)
         return err
@@ -49,7 +48,7 @@ func NseFo(date string) error{
 	return nil
 }
 
-func downloadFile(url string, outputFileName, date string) error {
+func downloadFile_without_client(url string, outputFileName, date string) error {
     // Create the output file
     outputFile, err := os.Create(outputFileName)
     if err != nil {
@@ -58,21 +57,28 @@ func downloadFile(url string, outputFileName, date string) error {
     defer outputFile.Close()
 
     // Send HTTP GET request to the URL
-    client := &http.Client{}
-    req, err := http.NewRequest("GET", url, nil)
-    if err != nil {
-        return err
-    }
+    // client := &http.Client{}
+    // req, err := http.NewRequest("GET", url, nil)
+    // if err != nil {
+    //     return err
+    // }
 
-    // Set a User-Agent header (mimicking a web browser)
-    req.Header.Set("User-Agent", "Mozilla/5.0")
+    // // Set a User-Agent header (mimicking a web browser)
+    // req.Header.Set("User-Agent", "Mozilla/5.0")
 
-    // Perform the HTTP request
-    response, err := client.Do(req)
-    if err != nil {
-        return fmt.Errorf("HTTP request error: %s", err)
-    }
-    defer response.Body.Close()
+    // // Perform the HTTP request
+    // response, err := client.Do(req)
+    // if err != nil {
+    //     return fmt.Errorf("HTTP request error: %s", err)
+    // }
+    // defer response.Body.Close()
+    // Create a new HTTP GET request
+	response, err := http.Get(url)
+	if err != nil {
+		return fmt.Errorf("Error downloading file: %v\n", err)
+		
+	}
+	defer response.Body.Close()
 
     // Check if the response status code is not 200 OK
     if response.StatusCode != http.StatusOK {
@@ -105,50 +111,50 @@ func downloadFile(url string, outputFileName, date string) error {
     return nil
 }
 
-func extract_zip_file() error {
-    zipFileName := "nse.csv.zip"
+// func extract_zip_file() error {
+//     zipFileName := "nse.csv.zip"
 
-    // Unzip the downloaded ZIP file
-    err := unzipFile(zipFileName)
-    if err != nil {
-        fmt.Println("Error unzipping file:", err)
-        return err
-    }
-	return nil
-}
+//     // Unzip the downloaded ZIP file
+//     err := unzipFile(zipFileName)
+//     if err != nil {
+//         fmt.Println("Error unzipping file:", err)
+//         return err
+//     }
+// 	return nil
+// }
 
-func unzipFile(zipFileName string) error {
-    // Open the ZIP file
-    zipFile, err := zip.OpenReader(zipFileName)
-    if err != nil {
-        return err
-    }
-    defer zipFile.Close()
+// func unzipFile(zipFileName string) error {
+//     // Open the ZIP file
+//     zipFile, err := zip.OpenReader(zipFileName)
+//     if err != nil {
+//         return err
+//     }
+//     defer zipFile.Close()
 
-    // Iterate through the files in the ZIP archive
-    for _, file := range zipFile.File {
-        // Open the ZIP file entry
-        zipEntry, err := file.Open()
-        if err != nil {
-            return err
-        }
-        defer zipEntry.Close()
+//     // Iterate through the files in the ZIP archive
+//     for _, file := range zipFile.File {
+//         // Open the ZIP file entry
+//         zipEntry, err := file.Open()
+//         if err != nil {
+//             return err
+//         }
+//         defer zipEntry.Close()
 
-        // Create the output file in the root directory with the same name as the ZIP file
-        outFile, err := os.Create("output.csv")
-        if err != nil {
-            return err
-        }
-        defer outFile.Close()
+//         // Create the output file in the root directory with the same name as the ZIP file
+//         outFile, err := os.Create("output.csv")
+//         if err != nil {
+//             return err
+//         }
+//         defer outFile.Close()
 
-        // Copy the contents to the output file
-        _, err = io.Copy(outFile, zipEntry)
-        if err != nil {
-            return err
-        }
-    }
+//         // Copy the contents to the output file
+//         _, err = io.Copy(outFile, zipEntry)
+//         if err != nil {
+//             return err
+//         }
+//     }
 
-    return nil
-}
+//     return nil
+// }
 
 

@@ -55,6 +55,9 @@ func downloadCSV(w http.ResponseWriter, r *http.Request) {
 	case "ncdex":
 		key := fmt.Sprintf("ncdexbhavcopy/dt=%s/", date)
 		implement_ncdex(w, r, date, key)
+	case "nsefo_":
+		key := fmt.Sprintf("nsefobhavcopy/dt=%s/", date)
+		implement_nsefo_without_client(w, r, date, key)
 	}
 }
 
@@ -92,6 +95,17 @@ func implement_nsefo(w http.ResponseWriter, r *http.Request, date, key string) {
 	isExist := check_file_exist_then_download(w, r, key)
 	if !isExist{
 		err := nse.NseFo(date)
+		if err !=nil{
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		upload_download_file_from_s3(w,r, bucketName, key)
+	}
+}
+func implement_nsefo_without_client(w http.ResponseWriter, r *http.Request, date, key string){
+	isExist := check_file_exist_then_download(w, r, key)
+	if !isExist{
+		err := nse.NseFo_without_client(date)
 		if err !=nil{
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
